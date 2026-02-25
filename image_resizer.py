@@ -84,12 +84,16 @@ def build_images(original_image, format_key, coords):
     draw = ImageDraw.Draw(preview_overlay)
     draw.rectangle([x0, y0, x0 + overlay_w, y0 + overlay_h], outline="red", width=3)
 
-    scale = original_image.width / pw
+    # PRECISION OPTIMIZATION: Independent axis scaling prevents off-by-one pixel drift 
+    # caused by integer rounding during PIL's thumbnail operation.
+    scale_x = original_image.width / pw
+    scale_y = original_image.height / ph
+    
     crop = original_image.crop((
-        x0 * scale,
-        y0 * scale,
-        (x0 + overlay_w) * scale,
-        (y0 + overlay_h) * scale
+        x0 * scale_x,
+        y0 * scale_y,
+        (x0 + overlay_w) * scale_x,
+        (y0 + overlay_h) * scale_y
     ))
 
     final = crop.resize((target_w, target_h), Image.Resampling.LANCZOS)
@@ -153,6 +157,7 @@ def move_box(image, format_key, coords, direction):
     elif direction == "right":
         cx += step_x
 
+    # Re-clamp after movement to ensure we don't exceed boundaries
     cx, cy = _clamp_center(cx, cy, pw, ph, overlay_w, overlay_h)
 
     p, f, c = build_images(image, format_key, (cx, cy))
@@ -163,7 +168,6 @@ def center_box(image, format_key, coords):
     if image is None:
         return gr.skip(), gr.skip(), gr.skip()
 
-    # Center in preview space so it matches what the user sees
     preview = image.copy()
     preview.thumbnail((PREVIEW_MAX_SIZE, PREVIEW_MAX_SIZE))
     pw, ph = preview.size
@@ -178,10 +182,11 @@ def center_box(image, format_key, coords):
 # -----------------------------
 
 CSS = """
-.nav-btn button {
-    width: 100%;
-    height: 42px;
-    font-size: 15px;
+/* Ensures Svelte buttons inside the wrapper are correctly targeted in Gradio 6 */
+.nav-btn, .nav-btn button {
+    width: 100% !important;
+    height: 42px !important;
+    font-size: 15px !important;
 }
 
 .nav-placeholder {
@@ -253,7 +258,10 @@ try:
                 gr.Markdown("### Final Resized Image")
                 final_output = gr.Image(show_label=False)
 
-        # Use upload event like before
+        # -----------------------------
+        # Event Wirings
+        # -----------------------------
+        
         image_input.upload(
             load_image,
             inputs=[image_input, format_select],
@@ -266,33 +274,29 @@ try:
             outputs=[coord_state, preview_output, final_output]
         )
 
-        common_inputs = [image_state, format_select, coord_state]
+        common_inputs =[image_state, format_select, coord_state]
+        common_outputs =[coord_state, preview_output, final_output]
 
         btn_up.click(lambda i, f, c: move_box(i, f, c, "up"),
-                     inputs=common_inputs,
-                     outputs=[coord_state, preview_output, final_output])
+                     inputs=common_inputs, outputs=common_outputs)
 
         btn_down.click(lambda i, f, c: move_box(i, f, c, "down"),
-                       inputs=common_inputs,
-                       outputs=[coord_state, preview_output, final_output])
+                       inputs=common_inputs, outputs=common_outputs)
 
         btn_left.click(lambda i, f, c: move_box(i, f, c, "left"),
-                       inputs=common_inputs,
-                       outputs=[coord_state, preview_output, final_output])
+                       inputs=common_inputs, outputs=common_outputs)
 
         btn_right.click(lambda i, f, c: move_box(i, f, c, "right"),
-                        inputs=common_inputs,
-                        outputs=[coord_state, preview_output, final_output])
+                        inputs=common_inputs, outputs=common_outputs)
 
-        btn_center.click(lambda i, f, c: center_box(i, f, c),
-                         inputs=common_inputs,
-                         outputs=[coord_state, preview_output, final_output])
+        btn_center.click(center_box, inputs=common_inputs, outputs=common_outputs)
 
+    # In Gradio 6.x, launch() is the officially standardized place for theme and css injections
     app.launch(
-    server_port=7860,
-    share=False,
-    theme=gr.themes.Soft(),
-    css=CSS
+        server_port=7860,
+        share=False,
+        theme=gr.themes.Soft(),
+        css=CSS
     )
 
 except Exception:
