@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.env/
+.venv/
+resizer-env/
+
+# Conda
+conda-meta/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Gradio temp
+tmp/
+.cache/
+
+# Visual Studio Pro
+.vs/
