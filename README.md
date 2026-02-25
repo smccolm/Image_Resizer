@@ -29,17 +29,17 @@ This tool keeps everything explicit:
 
 ## 🧠 Design Philosophy
 
-- \*\*Aspect-First Cropping\*\*  
-Overlay size is computed from target output ratio.
+- **Aspect-First Cropping**  
+  Overlay size is computed from target output ratio.
 
-- \*\*Preview-Space Interaction\*\*  
-All movement occurs in preview coordinates for intuitive UX.
+- **Preview-Space Interaction**  
+  All movement occurs in preview coordinates for intuitive UX.
 
-- \*\*Exact Original Scaling\*\*
-Crop region is scaled back to full-resolution before resize.
+- **Exact Original Scaling**  
+  Crop region is scaled back to full-resolution before resize.
 
-- \*\*High-Quality Resampling\*\*  
-Uses `Image.Resampling.LANCZOS`.
+- **High-Quality Resampling**  
+  Uses `Image.Resampling.LANCZOS`.
 
 ---
 
